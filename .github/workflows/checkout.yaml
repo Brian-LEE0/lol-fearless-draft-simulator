@@ -27,7 +27,6 @@ jobs:
           key: ${{ secrets.SERVER_KEY }}
           port: ${{ secrets.SERVER_PORT }}
           script: |
-            mkdir -p ~/lol-draft-simulator
             cd ~/lol-draft-simulator
             docker build -t lol-draft-simulator .
             docker run -d -p 3000:3000 2984:2984 --restart=always --name lol-draft-simulator lol-draft-simulator
