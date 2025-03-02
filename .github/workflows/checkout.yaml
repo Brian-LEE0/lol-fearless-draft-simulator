@@ -28,7 +28,12 @@ jobs:
           port: ${{ secrets.SERVER_PORT }}
           script: |
             cd ~/lol-draft-simulator
-            docker build -t lol-draft-simulator .
-            docker run -d -p 3000:3000 -p 2984:2984 --restart=always --name lol-draft-simulator lol-draft-simulator
+            # 기존 컨테이너 중지 및 삭제 (있다면)
+            docker stop lol-draft-simulator || true
+            docker rm lol-draft-simulator || true
+            
+            # 최신 이미지 빌드 및 실행
+            docker build -t lol-draft-simulator:latest .
+            docker run -d -p 3000:3000 --restart=always --name lol-draft-simulator lol-draft-simulator:latest
             
 
