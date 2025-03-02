@@ -9,9 +9,12 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
       - name: cur folder check
         run: ls -al
-        
+
       - name: rm -rf folder
         uses: appleboy/ssh-action@master
         with:
