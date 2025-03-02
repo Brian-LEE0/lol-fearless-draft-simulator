@@ -9,19 +9,6 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: RM -rf
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USERNAME }}
-          key: ${{ secrets.SERVER_KEY }}
-          port: ${{ secrets.SERVER_PORT }}
-          script: |
-            rm -rf ~/lol-draft-simulator
-
       - name: Copy files to server
         uses: appleboy/scp-action@master
         with:
@@ -40,6 +27,7 @@ jobs:
           key: ${{ secrets.SERVER_KEY }}
           port: ${{ secrets.SERVER_PORT }}
           script: |
+            mkdir -p ~/lol-draft-simulator
             cd ~/lol-draft-simulator
             docker build -t lol-draft-simulator .
             docker run -d -p 3000:3000 2984:2984 --restart=always --name lol-draft-simulator lol-draft-simulator
