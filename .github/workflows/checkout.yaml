@@ -29,6 +29,6 @@ jobs:
           script: |
             cd ~/lol-draft-simulator
             docker build -t lol-draft-simulator .
-            docker run -d -p 3000:3000 2984:2984 --restart=always --name lol-draft-simulator lol-draft-simulator
+            docker run -d -p 3000:3000 -p 2984:2984 --restart=always --name lol-draft-simulator lol-draft-simulator
             
 
