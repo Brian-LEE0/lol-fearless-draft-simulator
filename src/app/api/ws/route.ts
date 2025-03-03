@@ -11,6 +11,7 @@ interface Client {
 let wss: WebSocketServer | null = null
 let clients: { [id: string]: Client } = {}
 let clientSpectators: { [id: string]: Client[] } = {}
+let latestStatus: { [id: string]: string } = {}
 
 function initializeWebSocketServer() {
     if (wss) return;
@@ -58,12 +59,17 @@ function initializeWebSocketServer() {
                 clients[opponentKey].ws.send('opponent connected');
             }
         }
+        
+        if (latestStatus[roomId]) {
+            ws.send(latestStatus[roomId]);
+        }
 
         ws.on('message', (status, isBinary) => {
             const statusString = status.toString();
             console.log(`Received message from ${clientId}: ${statusString}`);
             const opponent = clients[opponentKey];
             console.log(`opponent: ${opponent}`);
+            latestStatus[roomId] = statusString;
             ws.send(statusString);
             if (opponent) {
                 opponent.ws.send(statusString);

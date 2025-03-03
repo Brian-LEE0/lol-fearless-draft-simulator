@@ -5,3 +5,7 @@ interface BanpickProps {
     params: params;
     searchParams: searchParams;
 }
+
+interface WaitingProps {
+    params: params;
+}

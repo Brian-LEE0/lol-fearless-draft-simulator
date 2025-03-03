@@ -5,6 +5,8 @@ RUN apk add --no-cache python3 py3-pip make g++
 
 RUN npm install -g npm@11.1.0
 
+RUN npm install -g env-cmd
+
 WORKDIR /app
 
 COPY package*.json ./

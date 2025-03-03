@@ -8,12 +8,19 @@ export default function Banpick(
     props: BanpickProps
 ) {
     const [blueTeamPicks, setBlueTeamPicks] = useState<(Champion | null)[]>(Array(5).fill(null));
+    const [blueTeamPicksConfirm, setBlueTeamPicksConfirm] = useState<(Boolean)[]>(Array(5).fill(false));
     const [blueTeamPicksCursor, setBlueTeamPicksCursor] = useState<(Boolean)[]>(Array(5).fill(false));
+
     const [redTeamPicks, setRedTeamPicks] = useState<(Champion | null)[]>(Array(5).fill(null));
+    const [redTeamPicksConfirm, setRedTeamPicksConfirm] = useState<(Boolean)[]>(Array(5).fill(false));
     const [redTeamPicksCursor, setRedTeamPicksCursor] = useState<(Boolean)[]>(Array(5).fill(false));
+
     const [blueTeamBans, setBlueTeamBans] = useState<(Champion | null)[]>(Array(5).fill(null));
+    const [blueTeamBansConfirm, setBlueTeamBansConfirm] = useState<(Boolean)[]>(Array(5).fill(false));
     const [blueTeamBansCursor, setBlueTeamBansCursor] = useState<(Boolean)[]>(Array(5).fill(false));
+
     const [redTeamBans, setRedTeamBans] = useState<(Champion | null)[]>(Array(5).fill(null));
+    const [redTeamBansConfirm, setRedTeamBansConfirm] = useState<(Boolean)[]>(Array(5).fill(false));
     const [redTeamBansCursor, setRedTeamBansCursor] = useState<(Boolean)[]>(Array(5).fill(false));
     const [isMyTurn, setIsMyTurn] = useState(false);
 
@@ -53,7 +60,7 @@ export default function Banpick(
     useEffect(() => {
         const connectWebSocket = async () => {
           await fetch(`/api/ws?side=${side}&room_id=${room_id}`)
-          const ws = new WebSocket(`ws://localhost:2984?side=${side}&room_id=${room_id}`)
+          const ws = new WebSocket(`${process.env.NEXT_PUBLIC_WS_BASE_URL}?side=${side}&room_id=${room_id}`)
     
           ws.onopen = () => {
             console.log('WebSocket connected')
@@ -124,6 +131,16 @@ export default function Banpick(
 
     useEffect(() => {
         console.log(status);
+        const newBlueTeamPicks = [...blueTeamPicks];
+        const newRedTeamPicks = [...redTeamPicks];
+        const newBlueTeamBans = [...blueTeamBans];
+        const newRedTeamBans = [...redTeamBans];
+
+        const newBlueTeamPicksConfirm = [...blueTeamPicksConfirm];
+        const newRedTeamPicksConfirm = [...redTeamPicksConfirm];
+        const newBlueTeamBansConfirm = [...blueTeamBansConfirm];
+        const newRedTeamBansConfirm = [...redTeamBansConfirm];
+
         for (let i = 0; i < status.champions.length; i++) {
             const curPlan = status.plans[i];
             const curPlanIdx = Number(curPlan[1]);
@@ -135,45 +152,59 @@ export default function Banpick(
 
             if(isPick){
                 if (isBlue) {
-                    const newBlueTeamPicks = [...blueTeamPicks];
                     const foundChampion = availableChampions.find(champion => champion.name === status.champions[i]);
-                    console.log(foundChampion);
                     if (foundChampion) {
                         newBlueTeamPicks[curPlanIdx] = foundChampion;
                     }
-                    setBlueTeamPicks(newBlueTeamPicks);
                 } else {
-                    const newRedTeamPicks = [...redTeamPicks];
                     const foundChampion = availableChampions.find(champion => champion.name === status.champions[i]);
-                    console.log(foundChampion);
                     if (foundChampion) {
                         newRedTeamPicks[curPlanIdx - 5] = foundChampion;
                     }
-
-                    setRedTeamPicks(newRedTeamPicks);
                 }
             }else if(isBlueBan){
-                const newBlueTeamBans = [...blueTeamBans];
                 const foundChampion = availableChampions.find(champion => champion.name === status.champions[i]);
-                console.log(foundChampion);
                 if (foundChampion) {
                     newBlueTeamBans[curPlanIdx] = foundChampion;
                 }
-                setBlueTeamBans(newBlueTeamBans);
             }else if(isRedBan){
-                const newRedTeamBans = [...redTeamBans];
                 const foundChampion = availableChampions.find(champion => champion.name === status.champions[i]);
-                console.log(foundChampion);
                 if (foundChampion) {
                     newRedTeamBans[curPlanIdx - 5] = foundChampion;
                 }
-                setRedTeamBans(newRedTeamBans);
             }
-            console.log("Blue Team Picks: ", blueTeamPicks);
-            console.log("Red Team Picks: ", redTeamPicks);
-            console.log("Blue Team Bans: ", blueTeamBans);
-            console.log("Red Team Bans: ", redTeamBans);
+            if (i < status.timestamps.length){
+                if (isPick){
+                    if (isBlue){
+                        newBlueTeamPicksConfirm[curPlanIdx] = true;
+                    }else{
+                        newRedTeamPicksConfirm[curPlanIdx - 5] = true;
+                    }
+                }else{
+                    if (isBlueBan){
+                        newBlueTeamBansConfirm[curPlanIdx] = true;
+                    }else{
+                        newRedTeamBansConfirm[curPlanIdx - 5] = true;
+                    }
+                }
+            }
         }
+
+        setBlueTeamPicks(newBlueTeamPicks);
+        setRedTeamPicks(newRedTeamPicks);
+        setBlueTeamBans(newBlueTeamBans);
+        setRedTeamBans(newRedTeamBans);
+
+        setBlueTeamPicksConfirm(newBlueTeamPicksConfirm);
+        setRedTeamPicksConfirm(newRedTeamPicksConfirm);
+        setBlueTeamBansConfirm(newBlueTeamBansConfirm);
+        setRedTeamBansConfirm(newRedTeamBansConfirm);
+
+        console.log("Blue Team Picks: ", blueTeamPicks);
+        console.log("Red Team Picks: ", redTeamPicks);
+        console.log("Blue Team Bans: ", blueTeamBans);
+        console.log("Red Team Bans: ", redTeamBans);
+
         if (status.timestamps.length === status.plans.length){
             alert("벤픽이 완료되었습니다.");
             return;
@@ -196,7 +227,7 @@ export default function Banpick(
                 setRedTeamPicksCursor(redTeamPicksCursor.map((_, idx) => idx === Number(curPlan[1]) - 5 ? true : false));
             }
         }
-    }, [status]);
+    }, [status, availableChampions]);
 
     const filteredChampions = pickableChampions.filter(champion =>
         champion.name.toLowerCase().replace(" ","").includes(searchTerm.toLowerCase().replace(" ","")) ||
@@ -254,7 +285,9 @@ export default function Banpick(
                             height={40}
                             className="rounded-full mr-2"
                             />
-                            <span className="bg-blue-700 text-white px-2 py-1 rounded">{blueTeamPicks[index]!.name}</span>
+                            {blueTeamPicksConfirm[index] ? (
+                                <span className="bg-blue-700 text-white px-2 py-1 rounded">{blueTeamPicks[index]!.name}</span>
+                            ) : <span className="color-change-blue text-white px-2 py-1 rounded">{blueTeamPicks[index]!.name}</span>}
                         </div>
                         ) : (
                         <div className="flex items-center">
@@ -289,7 +322,9 @@ export default function Banpick(
                                     height={40}
                                     className="rounded-full mr-2"
                                 />
-                                <span className="bg-blue-700 text-white px-2 py-1 rounded">{blueTeamBans[index]!.name}</span>
+                                {blueTeamBansConfirm[index] ? (
+                                    <span className="bg-blue-700 text-white px-2 py-1 rounded">{blueTeamBans[index]!.name}</span>
+                                ) : <span className="color-change-blue text-white px-2 py-1 rounded ">{blueTeamBans[index]!.name}</span>}
                             </div>
                         ) : (
                             <div className="flex items-center">
@@ -307,6 +342,8 @@ export default function Banpick(
                             )}
                             </div>
                         )}
+                        
+                    
                         </div>
                     ))}
                     </div>
@@ -328,7 +365,9 @@ export default function Banpick(
                             height={40}
                             className="rounded-full mr-2"
                             />
-                            <span className="bg-red-700 text-white px-2 py-1 rounded">{redTeamPicks[index]!.name}</span>
+                            {redTeamPicksConfirm[index] ? (
+                                <span className="bg-red-700 text-white px-2 py-1 rounded">{redTeamPicks[index]!.name}</span>
+                            ) : <span className="color-change-red text-white px-2 py-1 rounded">{redTeamPicks[index]!.name}</span>}
                         </div>
                         ) : (
                         <div className="flex items-center">
@@ -363,7 +402,9 @@ export default function Banpick(
                                     height={40}
                                     className="rounded-full mr-2"
                                 />
-                                <span className="bg-red-700 text-white px-2 py-1 rounded">{redTeamBans[index]!.name}</span>
+                                {redTeamBansConfirm[index] ? (
+                                    <span className="bg-red-700 text-white px-2 py-1 rounded">{redTeamBans[index]!.name}</span>
+                                ) : <span className="color-change-red text-white px-2 py-1 rounded">{redTeamBans[index]!.name}</span>}
                             </div>
                         ) : (
                             <div className="flex items-center">
@@ -390,29 +431,31 @@ export default function Banpick(
 
             {/* Champion Selection */}
             <div className="p-4 h-[50%] bg-gray-700 text-white">
-                <input
-                type="text"
-                placeholder="챔피언 이름을 검색하세요 (예: 아트록스, aatrox, ㅇㅌ, 아트)"
-                className="w-full h-[10%] text-black rounded"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                />
-                {isMyTurn && side === 'blue' ? (
-                    <button
-                        className="bg-blue-600 hover:bg-blue-500 text-white p-2 rounded mt-2"
-                        onClick={() => handleChampionSelectConfirm()}
-                    ><span>확정</span></button>
-                ) : isMyTurn && side === 'red' ? (
-                    <button
-                        className="bg-red-600 hover:bg-red-500 text-white p-2 rounded mt-2"
-                        onClick={() => handleChampionSelectConfirm()}
-                    ><span>확정</span></button>
-                ) : (
-                    <button
-                        className="bg-gray-600 text-white p-2 rounded mt-2 cursor-not-allowed"
-                        disabled
-                    ><span>확정</span></button>
-                )}
+                <div className="flex justify-between">
+                    <input
+                    type="text"
+                    placeholder="챔피언 이름을 검색하세요 (예: 아트록스, aatrox, ㅇㅌ, 아트)"
+                    className="w-full text-black rounded"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                    {isMyTurn && side === 'blue' ? (
+                        <button
+                            className="bg-blue-600 hover:bg-blue-500 text-white p-2 rounded mt-2 w-[20%]"
+                            onClick={() => handleChampionSelectConfirm()}
+                        ><span>확정</span></button>
+                    ) : isMyTurn && side === 'red' ? (
+                        <button
+                            className="bg-red-600 hover:bg-red-500 text-white p-2 rounded mt-2 w-[20%]"
+                            onClick={() => handleChampionSelectConfirm()}
+                        ><span>확정</span></button>
+                    ) : (
+                        <button
+                            className="bg-gray-600 text-white p-2 rounded mt-2 cursor-not-allowed w-[20%]"
+                            disabled
+                        ><span>확정</span></button>
+                    )}
+                </div>
                 <div className="grid overflow-y-auto h-[80%]
                  grid-cols-7 gap-2 mt-4">
                     {isMyTurn ? (

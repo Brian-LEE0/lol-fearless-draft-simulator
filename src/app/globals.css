@@ -24,21 +24,21 @@ body {
 }
 
 @keyframes color-change-red {
-  0% { color: #ffffff; }
-  50% { color: #ff5d5d; }
-  100% { color: #ffffff; }
+  0% { background-color: #b4b3b3; }
+  50% { background-color: #370000; }
+  100% { background-color: #b4b3b3; }
 }
 
 .color-change-red {
-  animation: color-change-red 0.3s infinite;
+  animation: color-change-red 1s infinite;
 }
 
 @keyframes color-change-blue {
-  0% { color: #ffffff; }
-  50% { color: #a5c8ff; }
-  100% { color: #ffffff; }
+  0% { background-color: #b4b3b3; }
+  50% { background-color: #001d4b; }
+  100% { background-color: #b4b3b3; }
 }
 
 .color-change-blue {
-  animation: color-change-blue 0.3s infinite;
+  animation: color-change-blue 1s infinite;
 }
