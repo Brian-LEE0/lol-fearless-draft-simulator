@@ -104,6 +104,7 @@ function initializeWebSocketServer() {
                 console.log(`Spectator disconnected: ${clientId}`);
                 return;
             }else{
+                clients[clientKey] = clients[clientKey].filter(client => client.id !== clientId);
                 if (clients[opponentKey]) {
                     clients[opponentKey].forEach(opponent => {
                         opponent.ws.send('opponent disconnected');
