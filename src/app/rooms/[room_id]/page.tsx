@@ -34,9 +34,11 @@ export default function Banpick(
         const fetchData = async () => {
             const champions = await fetchChampions();
             const banChampions = Buffer.from(ban, 'base64').toString('utf-8').split(',');
+            console.log(banChampions);
             const filteredChampions = champions.filter(champion => !banChampions.includes(champion.name));
             const filteredUnavailableChampions = champions.filter(champion => banChampions.includes(champion.name));
             setUnavailableChampions(filteredUnavailableChampions);
+            
             setAvailableChampions(filteredChampions);
             setPickableChampions(filteredChampions);
         };
@@ -430,7 +432,7 @@ export default function Banpick(
             </div>
 
             {/* Champion Selection */}
-            <div className="p-4 h-[50%] bg-gray-700 text-white">
+            <div className="p-4 h-[40%] bg-gray-700 text-white">
                 <div className="flex justify-between">
                     <input
                     type="text"

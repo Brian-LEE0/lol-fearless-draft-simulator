@@ -9,7 +9,7 @@ interface Client {
 }
 
 let wss: WebSocketServer | null = null
-let clients: { [id: string]: Client } = {}
+let clients: { [id: string]: Client[] } = {}
 let clientSpectators: { [id: string]: Client[] } = {}
 let latestStatus: { [id: string]: string } = {}
 
@@ -45,21 +45,32 @@ function initializeWebSocketServer() {
             clientSpectators[roomId].push({ id: clientId, ws, roomId, side });
             console.log(`New spectator connected: ${clientId} in room ${roomId}`);
         }else{
-            clients[clientKey] = { 
+            if(!clients[clientKey]){
+                clients[clientKey] = [];
+            }
+            clients[clientKey].push({ 
                 id: clientId,
                 ws,
                 roomId,
                 side
-            }
+            });
 
             console.log(`New client connected: ${clientId} in room ${roomId} on ${side} side`);
             
-            if (clients[opponentKey]) {
-                ws.send('opponent connected');
-                clients[opponentKey].ws.send('opponent connected');
+            if (clients[opponentKey] && clients[opponentKey].length > 0) {
+                console.log(`Opponent found: ${opponentKey}`);
+                clients[clientKey].forEach(client => {
+                    client.ws.send('opponent connected');
+                });
+                clients[opponentKey].forEach(opponent => {
+                    opponent.ws.send('opponent connected');
+                });
+                // ws.send('opponent connected');
+                // clients[opponentKey].ws.send('opponent connected');
+
             }
         }
-        
+
         if (latestStatus[roomId]) {
             ws.send(latestStatus[roomId]);
         }
@@ -70,9 +81,14 @@ function initializeWebSocketServer() {
             const opponent = clients[opponentKey];
             console.log(`opponent: ${opponent}`);
             latestStatus[roomId] = statusString;
-            ws.send(statusString);
+            clients[clientKey].forEach(client => {
+                client.ws.send(statusString);
+            });
             if (opponent) {
-                opponent.ws.send(statusString);
+                console.log(`Opponent found: ${opponent.length}`);
+                opponent.forEach(client => {
+                    client.ws.send(statusString);
+                });
             }
             if (clientSpectators[roomId]) {
                 console.log(`Spectators: ${clientSpectators[roomId].length}`);
@@ -89,7 +105,9 @@ function initializeWebSocketServer() {
                 return;
             }else{
                 if (clients[opponentKey]) {
-                    clients[opponentKey].ws.send('opponent disconnected');
+                    clients[opponentKey].forEach(opponent => {
+                        opponent.ws.send('opponent disconnected');
+                    });
                 }
             }
             console.log(`Client disconnected: ${clientId}`);
