@@ -18,8 +18,6 @@ type RoomLayoutProps = {
 
 export default function RoomLayout({ children }: RoomLayoutProps) {
   return (
-    <html lang="en">
-      <body>{children}</body>
-    </html>
+    <section>{children}</section>
   );
 }
