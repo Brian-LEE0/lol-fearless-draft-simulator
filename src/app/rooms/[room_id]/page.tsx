@@ -435,7 +435,7 @@ export default function Banpick(
                             {blueTeamPicksCursor[index] ? (
                                 <span className="text-gray-400 background-blue color-change-blue">Player {index + 1} Pick</span>
                             ) : (
-                                <span className="text-gray-400">Player {index + 1} Ban</span>
+                                <span className="text-gray-400">Player {index + 1} Pick</span>
                             )}
                         </div>
                         )}
@@ -515,7 +515,7 @@ export default function Banpick(
                             {redTeamPicksCursor[index] ? (
                                 <span className="text-gray-400 background-red color-change-red">Player {index + 6} Pick</span>
                             ) : (
-                                <span className="text-gray-400">Player {index + 6} Ban</span>
+                                <span className="text-gray-400">Player {index + 6} Pick</span>
                             )}
                         </div>
                         )}
