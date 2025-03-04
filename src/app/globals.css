@@ -42,3 +42,9 @@ body {
 .color-change-blue {
   animation: color-change-blue 1s infinite;
 }
+
+.timer {
+  font-size: 2rem;
+  font-weight: bold;
+  text-align: center;
+}

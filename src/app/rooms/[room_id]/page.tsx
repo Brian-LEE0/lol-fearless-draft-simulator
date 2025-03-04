@@ -30,6 +30,12 @@ export default function Banpick(
     const [availableChampions, setAvailableChampions] = useState<Champion[]>([]);
     const [unavailableChampions, setUnavailableChampions] = useState<Champion[]>([]);
     const [pickableChampions, setPickableChampions] = useState<Champion[]>([]);
+
+    const [timer, setTimer] = useState<Timer>({
+        side: 'blue',
+        time: -1,
+    });
+
     useEffect(() => {
         const fetchData = async () => {
             const champions = await fetchChampions();
@@ -55,27 +61,38 @@ export default function Banpick(
             plans: ["b0", "b5", "b1", "b6", "b2", "b7", "p0", "p5", "p6", "p1", "p2", "p7", "b8", "b3", "b9", "b4", "p8", "p3", "p4", "p9"],
             champions: [],
             timestamps: [],
+            ready: {
+                blue: null,
+                red: null,
+            }
         }
     );
     const socketRef = useRef<WebSocket | null>(null)
 
-    useEffect(() => {
-        const connectWebSocket = async () => {
-          await fetch(`/api/ws?side=${side}&room_id=${room_id}`)
-          const ws = new WebSocket(`${process.env.NEXT_PUBLIC_WS_BASE_URL}?side=${side}&room_id=${room_id}`)
-    
-          ws.onopen = () => {
-            console.log('WebSocket connected')
-          }
-    
-          ws.onmessage = (event) => {
-            const data: Status = JSON.parse(event.data)
-            setStatus(data)
-          }
-    
-          socketRef.current = ws
+    const connectWebSocket = async () => {
+        await fetch(`/api/ws?side=${side}&room_id=${room_id}`)
+        const ws = new WebSocket(`${process.env.NEXT_PUBLIC_WS_BASE_URL}?side=${side}&room_id=${room_id}`)
+  
+        ws.onopen = () => {
+          console.log('WebSocket connected')
         }
-    
+  
+        ws.onmessage = (event) => {
+            if (event.data === 'pong') {
+                return
+            }
+            try{
+                const data: Status = JSON.parse(event.data)
+                setStatus(data)
+            }catch(e){
+                console.log(event.data)
+            }
+        }
+
+        socketRef.current = ws
+    }
+
+    useEffect(() => {
         connectWebSocket()
     
         return () => {
@@ -111,14 +128,15 @@ export default function Banpick(
     };
 
     const handleChampionSelectConfirm = () => {
+        let newChampions = [...status.champions];
+        const newTimestamps = [...status.timestamps, Date.now()];
         if (tempChampion) {
             setTempChampion(null);
         }else{
-            alert("챔피언을 선택해주세요.");
-            return;
+            const randomChampion = pickableChampions[Math.floor(Math.random() * pickableChampions.length)];
+            newChampions = [...status.champions, randomChampion.name];
         }
-        const newChampions = [...status.champions];
-        const newTimestamps = [...status.timestamps, Date.now()];
+        
         setStatus({
             ...status,
             champions: newChampions,
@@ -133,6 +151,9 @@ export default function Banpick(
 
     useEffect(() => {
         console.log(status);
+        if (!status.ready.blue || !status.ready.red){
+            return;
+        }
         const newBlueTeamPicks = [...blueTeamPicks];
         const newRedTeamPicks = [...redTeamPicks];
         const newBlueTeamBans = [...blueTeamBans];
@@ -238,7 +259,7 @@ export default function Banpick(
     );
 
     const nextRoundButton = (s: string) => {
-        let newBan = [...Buffer.from(ban, 'base64').toString('utf-8').split(','), ...blueTeamBans.map(ban => ban?.name).filter(name => name !== null), ...redTeamBans.map(ban => ban?.name).filter(name => name !== null)];
+        let newBan = [...Buffer.from(ban, 'base64').toString('utf-8').split(','), ...blueTeamPicks.map(ban => ban?.name).filter(name => name !== null), ...redTeamPicks.map(ban => ban?.name).filter(name => name !== null)];
         let newBanStr = newBan.join(',');
         let newBanStrBase64 = Buffer.from(newBanStr).toString('base64');
         const newRoomId = room_id + "__new";
@@ -246,27 +267,138 @@ export default function Banpick(
         return url;
     }
 
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (socketRef.current) {
+                if (socketRef.current?.readyState === WebSocket.OPEN){
+                    socketRef.current.send('ping');
+                }else{
+                    connectWebSocket().then(() => {
+                        console.log('Reconnected');
+                        socketRef.current?.send('ping');
+                    });
+                }
+            }
+        }, 1000)
+        return () => clearInterval(interval)
+    }, [])
+
+    useEffect(() => {
+        if (!status.ready.blue || !status.ready.red){
+            return;
+        }
+
+        if (status.timestamps.length === status.plans.length){
+            return;
+        }
+
+        const interval = setInterval(() => {
+            const stdTime = Math.max(status.ready.blue ?? 0, status.ready.red ?? 0, status.timestamps[status.timestamps.length - 1] ?? 0);
+            const curTime = Date.now();
+            const nextTime = stdTime + 60000;
+            const time = (nextTime - curTime) / 1000;
+            const curPlan = status.plans[status.timestamps.length];
+            const curSide = Number(curPlan[1]) < 5 ? 'blue' : 'red';
+
+            if (time < 0){
+                handleChampionSelectConfirm();
+                return;
+            }
+            setTimer({
+                side: curSide,
+                time: time,
+            });
+        }, 100);
+
+        return () => clearInterval(interval);
+    }, [status]);
+
+    const handleReady = (side: string) => {
+        const newReady = {
+            ...status.ready,
+            [side]: Date.now(),
+        };
+        setStatus({
+            ...status,
+            ready: newReady,
+        });
+        sendStatus({
+            ...status,
+            ready: newReady,
+        });
+    };
+
+    
+
     return (
         <div className="flex flex-col h-screen bg-gray-900 text-white">
             {/* Header */}
             <div className="bg-gray-800 p-4 text-center">
                 <h1 className="text-2xl font-bold">리그 오브 레전드 벤픽</h1>
-                {side === 'blue' ? (
-                    <h2 className="text-lg font-semibold text-blue-500">블루 팀</h2>
-                ) : side === 'red' ? (
-                    <h2 className="text-lg font-semibold text-red-500">레드 팀</h2>
-                ) : (
-                    <h2 className="text-lg font-semibold text-gray-400">관전 모드</h2>
-                )}
-                <button className="bg-blue-600 hover:bg-blue-500 text-white p-2 rounded mt-2">
-                    <a href={nextRoundButton('blue')} target='_blank'>다음 라운드 블루 팀</a>
-                </button>
-                <button className="bg-red-600 hover:bg-red-500 text-white p-2 rounded mt-2 ml-2">
-                    <a href={nextRoundButton('red')} target='_blank'>다음 라운드 레드 팀</a>
-                </button>
-                <button className="bg-gray-600 hover:bg-gray-500 text-white p-2 rounded mt-2 ml-2">
-                    <a href={nextRoundButton('spec')} target='_blank'>다음 라운드 관전 모드</a>
-                </button>
+                {/* ready button */}
+                
+                <div className="flex justify-between">
+                    {timer.side === 'blue' && timer.time >= 0 ? <div className="timer">{Math.floor(timer.time)}</div>: <h1></h1>}
+                    {side === 'blue' ? (
+                        <h2 className="text-lg font-semibold text-blue-500">블루 팀</h2>
+                    ) : side === 'red' ? (
+                        <h2 className="text-lg font-semibold text-red-500">레드 팀</h2>
+                    ) : (
+                        <h2 className="text-lg font-semibold text-gray-400">관전 모드</h2>
+                    )}
+                    {timer.side === 'red' && timer.time >= 0 ? <div className="timer">{Math.floor(timer.time)}</div>: <h1></h1>}
+                </div>
+                <div className="flex justify-between">
+                    <div className="flex flex-col">
+                        {status.ready.blue || side !== 'blue' ? (
+                            <button
+                                className="bg-gray-600 text-white p-2 rounded mt-2"
+                                onClick={handleReady.bind(null, 'blue')}
+                                disabled
+                            >블루팀 준비하기</button>
+                        ) : (
+                            <button
+                                className="bg-blue-600 hover:bg-blue-500 text-white p-2 rounded mt-2"
+                                onClick={handleReady.bind(null, 'blue')}
+                            >블루팀 준비하기</button>
+                        )}
+                        {status.ready.blue ? (
+                            <span className="text-blue-500">블루팀 준비 완료</span>
+                        ) : (
+                            <span className="text-gray-400">블루팀 준비 대기</span>
+                        )}
+                    </div>
+                    <div className="flex justify-between">
+                        <button className="bg-blue-900 hover:bg-blue-500 text-white p-2 rounded mt-2">
+                            <a href={nextRoundButton('blue')} target='_blank'>다음 라운드 블루 팀</a>
+                        </button>
+                        <button className="bg-red-900 hover:bg-red-500 text-white p-2 rounded mt-2 ml-2">
+                            <a href={nextRoundButton('red')} target='_blank'>다음 라운드 레드 팀</a>
+                        </button>
+                        <button className="bg-gray-900 hover:bg-gray-500 text-white p-2 rounded mt-2 ml-2">
+                            <a href={nextRoundButton('spec')} target='_blank'>다음 라운드 관전 모드</a>
+                        </button>
+                    </div>
+                    <div className="flex flex-col">
+                        {status.ready.red || side !== 'red' ? (
+                            <button
+                                className="bg-gray-600 text-white p-2 rounded mt-2"
+                                onClick={handleReady.bind(null, 'red')}
+                                disabled
+                            >레드팀 준비하기</button>
+                        ) : (
+                            <button
+                                className="bg-red-600 hover:bg-red-500 text-white p-2 rounded mt-2"
+                                onClick={handleReady.bind(null, 'red')}
+                            >레드팀 준비하기</button>
+                        )}
+                        {status.ready.red ? (
+                            <span className="text-red-500">레드팀 준비 완료</span>
+                        ) : (
+                            <span className="text-gray-400">레드팀 준비 대기</span>
+                        )}
+                    </div>
+                </div>
                 <h5 className="text-sm mt-2">사용 불가 챔피언: {unavailableChampions.map(champion => champion.name).join(', ')}</h5>
             </div>
 
@@ -441,12 +573,12 @@ export default function Banpick(
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     />
-                    {isMyTurn && side === 'blue' ? (
+                    {isMyTurn && side === 'blue' && tempChampion ? (
                         <button
                             className="bg-blue-600 hover:bg-blue-500 text-white p-2 rounded mt-2 w-[20%]"
                             onClick={() => handleChampionSelectConfirm()}
                         ><span>확정</span></button>
-                    ) : isMyTurn && side === 'red' ? (
+                    ) : isMyTurn && side === 'red' && tempChampion ? (
                         <button
                             className="bg-red-600 hover:bg-red-500 text-white p-2 rounded mt-2 w-[20%]"
                             onClick={() => handleChampionSelectConfirm()}

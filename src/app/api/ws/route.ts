@@ -77,6 +77,10 @@ function initializeWebSocketServer() {
 
         ws.on('message', (status, isBinary) => {
             const statusString = status.toString();
+            if (statusString === 'ping') {
+                ws.send('pong');
+                return;
+            }
             console.log(`Received message from ${clientId}: ${statusString}`);
             const opponent = clients[opponentKey];
             console.log(`opponent: ${opponent}`);

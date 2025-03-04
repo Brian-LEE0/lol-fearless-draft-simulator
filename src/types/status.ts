@@ -4,4 +4,8 @@ interface Status {
     plans: string[];
     champions: string[];
     timestamps: number[];
+    ready: {
+        blue: number | null;
+        red: number | null;
+    },
 }
