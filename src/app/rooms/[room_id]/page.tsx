@@ -164,7 +164,7 @@ export default function Banpick(
         const newBlueTeamBansConfirm = [...blueTeamBansConfirm];
         const newRedTeamBansConfirm = [...redTeamBansConfirm];
 
-        for (let i = 0; i < status.champions.length; i++) {
+        for (let i = 0; i < Math.min(status.champions.length, status.plans.length); i++) {
             const curPlan = status.plans[i];
             const curPlanIdx = Number(curPlan[1]);
             const isPick = curPlan[0] === 'p';
@@ -229,7 +229,6 @@ export default function Banpick(
         console.log("Red Team Bans: ", redTeamBans);
 
         if (status.timestamps.length === status.plans.length){
-            alert("벤픽이 완료되었습니다.");
             return;
         }
         const curPlan = status.plans[status.timestamps.length];
@@ -301,14 +300,16 @@ export default function Banpick(
             const curSide = Number(curPlan[1]) < 5 ? 'blue' : 'red';
 
             if (time < 0){
-                handleChampionSelectConfirm();
+                if (curSide === side){
+                    handleChampionSelectConfirm();
+                }
                 return;
             }
             setTimer({
                 side: curSide,
                 time: time,
             });
-        }, 100);
+        }, 1000);
 
         return () => clearInterval(interval);
     }, [status]);
