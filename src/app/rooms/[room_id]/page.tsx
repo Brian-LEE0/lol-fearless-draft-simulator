@@ -39,7 +39,7 @@ export default function Banpick(
     useEffect(() => {
         const fetchData = async () => {
             const champions = await fetchChampions();
-            const banChampions = Buffer.from(ban, 'base64').toString('utf-8').split(',');
+            const banChampions = ban.split(',')
             console.log(banChampions);
             const filteredChampions = champions.filter(champion => !banChampions.includes(champion.name));
             const filteredUnavailableChampions = champions.filter(champion => banChampions.includes(champion.name));
@@ -258,11 +258,11 @@ export default function Banpick(
     );
 
     const nextRoundButton = (s: string) => {
-        let newBan = [...Buffer.from(ban, 'base64').toString('utf-8').split(','), ...blueTeamPicks.map(ban => ban?.name).filter(name => name !== null), ...redTeamPicks.map(ban => ban?.name).filter(name => name !== null)];
+        let newBan = [...ban.split(','), ...blueTeamPicks.map(ban => ban?.name).filter(name => name !== null), ...redTeamPicks.map(ban => ban?.name).filter(name => name !== null)];
         let newBanStr = newBan.join(',');
-        let newBanStrBase64 = Buffer.from(newBanStr).toString('base64');
-        const newRoomId = room_id + "__new";
-        let url = `/rooms/${newRoomId}?side=${s}&ban=${newBanStrBase64}`;
+        let newRoomId = decodeURI(room_id);
+        newRoomId = newRoomId.slice(0, newRoomId.length - 3) + (Number(newRoomId[newRoomId.length - 3]) + 1).toString() + '경기';
+        let url = `/rooms/${encodeURI(newRoomId)}?side=${s}&ban=${encodeURI(newBanStr)}`;
         return url;
     }
 
@@ -339,7 +339,7 @@ export default function Banpick(
                 {/* ready button */}
                 
                 <div className="flex justify-between">
-                    {timer.side === 'blue' && timer.time >= 0 ? <div className="timer">{Math.floor(timer.time)}</div>: <h1></h1>}
+                    {timer.side === 'blue' && timer.time >= 0 ? <div className="timer text-blue-300">{Math.floor(timer.time)}</div>: <div className="timer">0</div>}
                     {side === 'blue' ? (
                         <h2 className="text-lg font-semibold text-blue-500">블루 팀</h2>
                     ) : side === 'red' ? (
@@ -347,7 +347,7 @@ export default function Banpick(
                     ) : (
                         <h2 className="text-lg font-semibold text-gray-400">관전 모드</h2>
                     )}
-                    {timer.side === 'red' && timer.time >= 0 ? <div className="timer">{Math.floor(timer.time)}</div>: <h1></h1>}
+                    {timer.side === 'red' && timer.time >= 0 ? <div className="timer text-red-300">{Math.floor(timer.time)}</div>: <div className="timer">0</div>}
                 </div>
                 <div className="flex justify-between">
                     <div className="flex flex-col">
@@ -400,6 +400,7 @@ export default function Banpick(
                         )}
                     </div>
                 </div>
+                <h5 className="text-sm mt-2">방 이름: {decodeURI(room_id)}</h5>
                 <h5 className="text-sm mt-2">사용 불가 챔피언: {unavailableChampions.map(champion => champion.name).join(', ')}</h5>
             </div>
 

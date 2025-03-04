@@ -9,7 +9,7 @@ export default function Home() {
     const inputElement = document.querySelector('input');
     if (inputElement) {
       const roomName = inputElement.value;
-      router.push(`/rooms/${roomName}/waiting-room`);
+      router.push(`/rooms/${encodeURI(roomName + " 1경기")}/waiting-room`);
     } else {
       console.error('Input element not found');
     }
