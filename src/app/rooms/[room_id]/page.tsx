@@ -282,6 +282,8 @@ export default function Banpick(
         return () => clearInterval(interval)
     }, [])
 
+    const timerRef = useRef<NodeJS.Timeout | null>(null);
+
     useEffect(() => {
         if (!status.ready.blue || !status.ready.red){
             return;
@@ -291,7 +293,14 @@ export default function Banpick(
             return;
         }
 
-        const interval = setInterval(() => {
+        const interval = () => {
+            if (!status.ready.blue || !status.ready.red){
+                return;
+            }
+            if (status.timestamps.length === status.plans.length){
+                return;
+            }
+            
             const stdTime = Math.max(status.ready.blue ?? 0, status.ready.red ?? 0, status.timestamps[status.timestamps.length - 1] ?? 0);
             const curTime = Date.now();
             const nextTime = stdTime + 60000;
@@ -300,8 +309,12 @@ export default function Banpick(
             const curSide = Number(curPlan[1]) < 5 ? 'blue' : 'red';
 
             if (time < 0){
-                if (curSide === side){
+                if (curSide === 'blue' || curSide === 'red'){
                     handleChampionSelectConfirm();
+                }
+                if (timerRef.current) {
+                    clearTimeout(timerRef.current);
+                    timerRef.current = null;
                 }
                 return;
             }
@@ -309,10 +322,20 @@ export default function Banpick(
                 side: curSide,
                 time: time,
             });
-        }, 1000);
+            
+            timerRef.current = setTimeout(interval, 1000);
+        };
 
-        return () => clearInterval(interval);
-    }, [status]);
+        timerRef.current = setTimeout(interval, 1000);
+
+        return () => {
+            if (timerRef.current) {
+              clearTimeout(timerRef.current);
+              timerRef.current = null;
+            }
+        };
+
+    }, [status.timestamps]);
 
     const handleReady = (side: string) => {
         const newReady = {
@@ -566,71 +589,73 @@ export default function Banpick(
             </div>
 
             {/* Champion Selection */}
-            <div className="p-4 h-[40%] bg-gray-700 text-white">
-                <div className="flex justify-between">
-                    <input
-                    type="text"
-                    placeholder="챔피언 이름을 검색하세요 (예: 아트록스, aatrox, ㅇㅌ, 아트)"
-                    className="w-full text-black rounded"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                    {isMyTurn && side === 'blue' && tempChampion ? (
-                        <button
-                            className="bg-blue-600 hover:bg-blue-500 text-white p-2 rounded mt-2 w-[20%]"
-                            onClick={() => handleChampionSelectConfirm()}
-                        ><span>확정</span></button>
-                    ) : isMyTurn && side === 'red' && tempChampion ? (
-                        <button
-                            className="bg-red-600 hover:bg-red-500 text-white p-2 rounded mt-2 w-[20%]"
-                            onClick={() => handleChampionSelectConfirm()}
-                        ><span>확정</span></button>
-                    ) : (
-                        <button
-                            className="bg-gray-600 text-white p-2 rounded mt-2 cursor-not-allowed w-[20%]"
-                            disabled
-                        ><span>확정</span></button>
-                    )}
-                </div>
-                <div className="grid overflow-y-auto h-[80%]
-                 grid-cols-7 gap-2 mt-4">
-                    {isMyTurn ? (
-                        filteredChampions.map(champion => (
+            {side === 'blue' || side === 'red' ? (
+                <div className="p-4 h-[40%] bg-gray-700 text-white">
+                    <div className="flex justify-between">
+                        <input
+                        type="text"
+                        placeholder="챔피언 이름을 검색하세요 (예: 아트록스, aatrox, ㅇㅌ, 아트)"
+                        className="w-full text-black rounded"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                        {isMyTurn && side === 'blue' && tempChampion ? (
                             <button
-                            key={champion.name}
-                            className="bg-gray-600 hover:bg-gray-500 text-white p-2 rounded flex flex-col items-center"
-                            onClick={() => handleChampionSelect(champion)}
-                            >
-                            <Image
-                                src={champion.image}
-                                alt={champion.name}
-                                width={40}
-                                height={40}
-                                className="rounded-full mb-1"
-                            />
-                            {champion.name}
-                            </button>
-                        ))
-                    ) : (
-                        filteredChampions.map(champion => (
+                                className="bg-blue-600 hover:bg-blue-500 text-white p-2 rounded mt-2 w-[20%]"
+                                onClick={() => handleChampionSelectConfirm()}
+                            ><span>확정</span></button>
+                        ) : isMyTurn && side === 'red' && tempChampion ? (
                             <button
-                            key={champion.name}
-                            className="bg-gray-600 text-white p-2 rounded flex flex-col items-center cursor-not-allowed"
-                            disabled
-                            >
-                            <Image
-                                src={champion.image}
-                                alt={champion.name}
-                                width={40}
-                                height={40}
-                                className="rounded-full mb-1"
-                            />
-                            {champion.name}
-                            </button>
-                        ))
-                    )}
+                                className="bg-red-600 hover:bg-red-500 text-white p-2 rounded mt-2 w-[20%]"
+                                onClick={() => handleChampionSelectConfirm()}
+                            ><span>확정</span></button>
+                        ) : (
+                            <button
+                                className="bg-gray-600 text-white p-2 rounded mt-2 cursor-not-allowed w-[20%]"
+                                disabled
+                            ><span>확정</span></button>
+                        )}
+                    </div>
+                    <div className="grid overflow-y-auto h-[80%]
+                    grid-cols-7 gap-2 mt-4">
+                        {isMyTurn ? (
+                            filteredChampions.map(champion => (
+                                <button
+                                key={champion.name}
+                                className="bg-gray-600 hover:bg-gray-500 text-white p-2 rounded flex flex-col items-center"
+                                onClick={() => handleChampionSelect(champion)}
+                                >
+                                <Image
+                                    src={champion.image}
+                                    alt={champion.name}
+                                    width={40}
+                                    height={40}
+                                    className="rounded-full mb-1"
+                                />
+                                {champion.name}
+                                </button>
+                            ))
+                        ) : (
+                            filteredChampions.map(champion => (
+                                <button
+                                key={champion.name}
+                                className="bg-gray-600 text-white p-2 rounded flex flex-col items-center cursor-not-allowed"
+                                disabled
+                                >
+                                <Image
+                                    src={champion.image}
+                                    alt={champion.name}
+                                    width={40}
+                                    height={40}
+                                    className="rounded-full mb-1"
+                                />
+                                {champion.name}
+                                </button>
+                            ))
+                        )}
+                    </div>
                 </div>
-            </div>
+            ) : (<div></div>)}
         </div>
     );
 };
