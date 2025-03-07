@@ -1,3 +1,4 @@
+import {Champion} from '@/types/champion';
 import * as hangul from 'hangul-js';
 // import {GetServerSideProps} from 'next';
 

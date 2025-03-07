@@ -3,6 +3,7 @@ import React, { use, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import {fetchChampions} from '@/lib/champion';
 import empty_slot from '@/public/empty_slot.png';
+import {Champion} from '@/types/champion';
 
 export default function Banpick(
     props: BanpickProps
@@ -536,7 +537,7 @@ export default function Banpick(
                 <div>
                     {Array(5).fill(null).map((_, index) => (
                     <div key={index} className="mb-2">
-                        {redTeamPicks[index] && redTeamPicks[index] !== "None" ? (
+                        {redTeamPicks[index]? (
                         <div className="flex items-center">
                             <Image
                             src={redTeamPicks[index]!.image}
