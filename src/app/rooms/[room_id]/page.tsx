@@ -129,12 +129,18 @@ export default function Banpick(
 
     const handleChampionSelectConfirm = () => {
         let newChampions = [...status.champions];
+        const curPlan = status.plans[status.timestamps.length];
+        const isBan = curPlan[0] === 'b';
         const newTimestamps = [...status.timestamps, Date.now()];
         if (tempChampion) {
             setTempChampion(null);
         }else{
-            const randomChampion = pickableChampions[Math.floor(Math.random() * pickableChampions.length)];
-            newChampions = [...status.champions, randomChampion.name];
+            if (isBan){
+                newChampions = [...status.champions, "None"];
+            }else{
+                const randomChampion = pickableChampions[Math.floor(Math.random() * pickableChampions.length)];
+                newChampions = [...status.champions, randomChampion.name];
+            }
         }
         
         setStatus({
@@ -173,27 +179,42 @@ export default function Banpick(
             const isBlueBan = isBan && curPlanIdx < 5;
             const isRedBan = isBan && curPlanIdx >= 5;
 
+            const noneChampion = {
+                name: "None",
+                subname: "",
+                chosung: "",
+                image: empty_slot,
+            }
+
             if(isPick){
                 if (isBlue) {
                     const foundChampion = availableChampions.find(champion => champion.name === status.champions[i]);
                     if (foundChampion) {
                         newBlueTeamPicks[curPlanIdx] = foundChampion;
+                    }else{
+                        newBlueTeamPicks[curPlanIdx] = noneChampion;
                     }
                 } else {
                     const foundChampion = availableChampions.find(champion => champion.name === status.champions[i]);
                     if (foundChampion) {
                         newRedTeamPicks[curPlanIdx - 5] = foundChampion;
+                    }else{
+                        newRedTeamPicks[curPlanIdx - 5] = noneChampion;
                     }
                 }
             }else if(isBlueBan){
                 const foundChampion = availableChampions.find(champion => champion.name === status.champions[i]);
                 if (foundChampion) {
                     newBlueTeamBans[curPlanIdx] = foundChampion;
+                }else{
+                    newBlueTeamBans[curPlanIdx] = noneChampion;
                 }
             }else if(isRedBan){
                 const foundChampion = availableChampions.find(champion => champion.name === status.champions[i]);
                 if (foundChampion) {
                     newRedTeamBans[curPlanIdx - 5] = foundChampion;
+                }else{
+                    newRedTeamBans[curPlanIdx - 5] = noneChampion;
                 }
             }
             if (i < status.timestamps.length){
@@ -482,7 +503,7 @@ export default function Banpick(
                                     className="rounded-full mr-2"
                                 />
                                 {blueTeamBansConfirm[index] ? (
-                                    <span className="bg-blue-700 text-white px-2 py-1 rounded">{blueTeamBans[index]!.name}</span>
+                                    <span className={`${blueTeamBans[index].name === "None" ? "bg-blue-950" : "bg-blue-700"}  text-white px-2 py-1 rounded`}>{blueTeamBans[index]!.name}</span>
                                 ) : <span className="color-change-blue text-white px-2 py-1 rounded ">{blueTeamBans[index]!.name}</span>}
                             </div>
                         ) : (
@@ -515,7 +536,7 @@ export default function Banpick(
                 <div>
                     {Array(5).fill(null).map((_, index) => (
                     <div key={index} className="mb-2">
-                        {redTeamPicks[index] ? (
+                        {redTeamPicks[index] && redTeamPicks[index] !== "None" ? (
                         <div className="flex items-center">
                             <Image
                             src={redTeamPicks[index]!.image}
@@ -562,7 +583,7 @@ export default function Banpick(
                                     className="rounded-full mr-2"
                                 />
                                 {redTeamBansConfirm[index] ? (
-                                    <span className="bg-red-700 text-white px-2 py-1 rounded">{redTeamBans[index]!.name}</span>
+                                    <span className={`${redTeamBans[index].name === "None" ? "bg-red-950" : "bg-red-700"} text-white px-2 py-1 rounded`}>{redTeamBans[index]!.name}</span>
                                 ) : <span className="color-change-red text-white px-2 py-1 rounded">{redTeamBans[index]!.name}</span>}
                             </div>
                         ) : (
@@ -622,7 +643,7 @@ export default function Banpick(
                             filteredChampions.map(champion => (
                                 <button
                                 key={champion.name}
-                                className="bg-gray-600 hover:bg-gray-500 text-white p-2 rounded flex flex-col items-center"
+                                className={`bg-gray-600 hover:bg-gray-500 text-white p-2 rounded flex flex-col items-center`}
                                 onClick={() => handleChampionSelect(champion)}
                                 >
                                 <Image
