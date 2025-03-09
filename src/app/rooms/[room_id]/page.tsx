@@ -39,8 +39,8 @@ export default function Banpick(
             const curTime = Date.now();
             const res = await fetch('/api/now');
             const data = await res.json();
-            console.log(curTime - data.timestamp, data.timestamp, curTime);
-            setTimeGlich(curTime - data.timestamp);
+            console.log(data.timestamp - curTime, data.timestamp, curTime);
+            setTimeGlich(data.timestamp - curTime);
         }
         fetchTime();
     }, []);
