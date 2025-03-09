@@ -32,6 +32,19 @@ export default function Banpick(
     const [unavailableChampions, setUnavailableChampions] = useState<Champion[]>([]);
     const [pickableChampions, setPickableChampions] = useState<Champion[]>([]);
 
+    const [timeGlich, setTimeGlich] = useState(0);
+
+    useEffect(() => {
+        async function fetchTime() {
+            const curTime = Date.now();
+            const res = await fetch('/api/now');
+            const data = await res.json();
+            console.log(curTime - data.timestamp, data.timestamp, curTime);
+            setTimeGlich(curTime - data.timestamp);
+        }
+        fetchTime();
+    }, []);
+
     const [timer, setTimer] = useState<Timer>({
         side: 'blue',
         time: -1,
@@ -118,10 +131,6 @@ export default function Banpick(
         const curIdx = status.timestamps.length;
         const newChampions = [...status.champions];
         newChampions[curIdx] = champion.name;
-        setStatus({
-            ...status,
-            champions: newChampions,
-        });
         sendStatus({
             ...status,
             champions: newChampions,
@@ -132,7 +141,7 @@ export default function Banpick(
         let newChampions = [...status.champions];
         const curPlan = status.plans[status.timestamps.length];
         const isBan = curPlan[0] === 'b';
-        const newTimestamps = [...status.timestamps, Date.now()];
+        const newTimestamps = [...status.timestamps, Date.now() + timeGlich];
         if (tempChampion) {
             setTempChampion(null);
         }else{
@@ -144,11 +153,6 @@ export default function Banpick(
             }
         }
         
-        setStatus({
-            ...status,
-            champions: newChampions,
-            timestamps: newTimestamps,
-        });
         sendStatus({
             ...status,
             champions: newChampions,
@@ -324,14 +328,14 @@ export default function Banpick(
             }
             
             const stdTime = Math.max(status.ready.blue ?? 0, status.ready.red ?? 0, status.timestamps[status.timestamps.length - 1] ?? 0);
-            const curTime = Date.now();
+            const curTime = Date.now() + timeGlich;
             const nextTime = stdTime + 60000;
             const time = (nextTime - curTime) / 1000;
             const curPlan = status.plans[status.timestamps.length];
             const curSide = Number(curPlan[1]) < 5 ? 'blue' : 'red';
 
             if (time < 0){
-                if (curSide === 'blue' || curSide === 'red'){
+                if (curSide === side){
                     handleChampionSelectConfirm();
                 }
                 if (timerRef.current) {
@@ -362,12 +366,8 @@ export default function Banpick(
     const handleReady = (side: string) => {
         const newReady = {
             ...status.ready,
-            [side]: Date.now(),
+            [side]: Date.now() + timeGlich,
         };
-        setStatus({
-            ...status,
-            ready: newReady,
-        });
         sendStatus({
             ...status,
             ready: newReady,
